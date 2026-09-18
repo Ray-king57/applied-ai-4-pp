@@ -52,8 +52,19 @@ class GeneticAlgorithm:
         # Remember: Selection determines which traits get passed to next generation!
         
         # Minimal version: just take top 50% of population
-        survival_count = max(1, len(fitness_scores) // 2)  # Top 50%
-        survivors = [gatherer for gatherer, fitness in fitness_scores[:survival_count]]
+        survival_count = max(1, len(fitness_scores) // 5)  # Top 20%
+        tournament_size = 4
+
+
+        survivors = []
+        pool = fitness_scores.copy()
+
+        while len(survivors) < survival_count and pool:
+            contenders = random.sample(pool, min(tournament_size, len(pool)))
+            winner = max(contenders, key=lambda pair: pair[1])
+            survivors.append(winner[0])
+            pool.remove(winner)
+
         return survivors
     
     def crossover(self, parent1, parent2):
@@ -88,11 +99,28 @@ class GeneticAlgorithm:
         #
         # Remember: Mutation provides diversity but shouldn't destroy good solutions!
         
-        for gene_name in gatherer.genes:
+        mutation_scale = 1 / (1 + self.generation / 3)
+
+        priority = {
+            'speed': 1.5,
+            'efficiency': 1.5,
+            'cooperation': 1.0,
+            'caution': 1.0,
+            'search_pattern': 0.5
+        }
+        BASE_STEP = 0.1
+        for gene_name, value in gatherer.genes.items():
             if random.random() < MUTATION_RATE:
-                # Minimal version: just flip a coin and randomize the gene completely
                 min_val, max_val = GENE_RANGES[gene_name]
-                gatherer.genes[gene_name] = random.uniform(min_val, max_val)
+                gene_range = max_val - min_val
+
+                
+                sigma = BASE_STEP * gene_range * mutation_scale * priority[gene_name]
+                step = random.gauss(0, sigma)
+
+                new_value = value + step
+                new_value = max(min_val, min(max_val, new_value))
+                gatherer.genes[gene_name] = new_value
     
     def create_next_generation(self, population):
         # Evaluate fitness

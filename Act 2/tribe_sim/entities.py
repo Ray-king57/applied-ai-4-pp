@@ -189,8 +189,12 @@ class Gatherer:
         # 5. Think about edge cases: dead vs alive, high energy vs low energy
         #
         # Remember: Higher fitness = more likely to reproduce!
-        
-        return self.age / 100.0  # Minimal version: just survival time
+        score = self.food_collected * self.age
+
+        if self.alive:
+            score += 50
+
+        return score
     
     def take_damage(self):
         """Handle death/life loss"""
